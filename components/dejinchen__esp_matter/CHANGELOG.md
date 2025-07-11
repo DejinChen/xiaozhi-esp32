@@ -1,0 +1,44 @@
+# Changelog for esp_matter component registry
+
+## [1.4.1~1](https://components.espressif.com/components/espressif/esp_matter/versions/1.4.1~1)
+
+#### Features
+
+- esp-matter commit: 26f4e4d3f4e684edd68c353446c3fcc3ee901771
+- connectedhomeip commit: f1f3a55c9b7ab8f07a6d96a28190b02ec3d4939e
+
+## [1.4.1](https://components.espressif.com/components/espressif/esp_matter/versions/1.4.1)
+
+#### Bug Fixes
+
+- `NDEBUG` flag will be added if `CONFIG_COMPILER_OPTIMIZATION_ASSERTIONS_DISABLE` is set.
+
+#### Features
+
+- esp-matter commit: 725558007ca8d77de8faad2175b04016e90da57c
+- connectedhomeip commit: 19aeeb3ba072250b47c21cd242e657d5949a97d3
+
+## [1.4.0](https://components.espressif.com/components/espressif/esp_matter/versions/1.4.0)
+
+#### Features
+
+- Component based on Matter 1.4
+- esp-matter commit: 30af618a6e962623a0098ad6a33b468f33dc49c7
+- connectedhomeip commit: cd07c4f5c3988258e6eba9d34d3dc0767d95e5a3
+
+## [1.3.1](https://components.espressif.com/components/espressif/esp_matter/versions/1.3.1)
+
+#### Features
+
+- Work with IDF component management (version >= 2.0) without hash problem
+- External platform path setting: support both absolute path or relative path to top-level CMakeLists
+- More default compile options for the source files
+- Could enable CONFIG_CHIP_OTA_IMAGE_BUILD to generate ota.bin file with IDF component management (version >= 2.0)
+- esp-matter commit: 5a9bc09a640d5cfd4c6b137f7e3b13ce5fa9cca4
+- connectedhomeip commit: 735b69f73e386cb675242371afd0b237a8a78982
+
+## [1.3.0](https://components.espressif.com/components/espressif/esp_matter/versions/1.3.0)
+
+#### Features
+
+- Component `esp_matter` based on branch release/v1.3 [commit](https://github.com/espressif/esp-matter/commit/d76d4857d768b32eb215e825448d938018e5691a), commit date Jun 11, 2024.

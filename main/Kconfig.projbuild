@@ -447,5 +447,18 @@ choice I2S_TYPE_TAIJIPI_S3
     config TAIJIPAI_I2S_TYPE_PDM
         bool "I2S Type PDM"
 endchoice
+config ENABLE_CUSTOM_WEBSOCKET_URL
+    bool "Enable custom websocket url"
+    default n
+    depends on USE_AUDIO_DEBUGGER
+    help
+        Whether to use custom websocket url address
+
+config CUSTOM_WEBSOCKET_URL
+    string "Custom websocket url"
+    default "ws://192.168.50.191:8000/xiaozhi/v1/"
+    depends on ENABLE_CUSTOM_WEBSECKET_URL
+    help
+        Custom websocket url address
 
 endmenu

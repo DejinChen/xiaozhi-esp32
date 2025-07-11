@@ -32,6 +32,12 @@ public:
 
     inline int width() const { return width_; }
     inline int height() const { return height_; }
+    void SetEmotionClickable(lv_event_cb_t cb) {
+        if (emotion_label_) {
+            lv_obj_add_flag(emotion_label_, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(emotion_label_, cb, LV_EVENT_CLICKED, NULL);
+        }
+    }
 
 protected:
     int width_ = 0;

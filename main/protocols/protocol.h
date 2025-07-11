@@ -41,9 +41,9 @@ enum ListeningMode {
     kListeningModeRealtime // 需要 AEC 支持
 };
 
-class Protocol {
+class BaseProtocol {
 public:
-    virtual ~Protocol() = default;
+    virtual ~BaseProtocol() = default;
 
     inline int server_sample_rate() const {
         return server_sample_rate_;

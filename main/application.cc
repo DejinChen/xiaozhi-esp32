@@ -10,6 +10,8 @@
 #include "iot/thing_manager.h"
 #include "assets/lang_config.h"
 #include "mcp_server.h"
+#include "matter_controller.h"
+
 #include "audio_debugger.h"
 
 #if CONFIG_USE_AUDIO_PROCESSOR
@@ -316,7 +318,7 @@ void Application::ToggleChatState() {
     }
 
     if (!protocol_) {
-        ESP_LOGE(TAG, "Protocol not initialized");
+        ESP_LOGE(TAG, "BaseProtocol not initialized");
         return;
     }
 
@@ -352,7 +354,7 @@ void Application::StartListening() {
     }
 
     if (!protocol_) {
-        ESP_LOGE(TAG, "Protocol not initialized");
+        ESP_LOGE(TAG, "BaseProtocol not initialized");
         return;
     }
     
@@ -465,9 +467,13 @@ void Application::Start() {
     McpServer::GetInstance().AddCommonTools();
 #endif
 
-    if (ota.HasMqttConfig()) {
-        protocol_ = std::make_unique<MqttProtocol>();
-    } else if (ota.HasWebsocketConfig()) {
+    MatterController::GetInstance()->Initialize();
+    codec->SetOutputVolume(30);
+
+    if (ota_.HasMqttConfig()) {
+        protocol_ = std::make_unique<WebsocketProtocol>();
+        // protocol_ = std::make_unique<MqttProtocol>();
+    } else if (ota_.HasWebsocketConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
     } else {
         ESP_LOGW(TAG, "No protocol specified in the OTA config, using MQTT");

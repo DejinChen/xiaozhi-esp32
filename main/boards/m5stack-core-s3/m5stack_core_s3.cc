@@ -1,3 +1,6 @@
+#include "esp_lcd_touch.h"
+#include "esp_lcd_touch_ft5x06.h"
+#include "esp_lvgl_port_touch.h"
 #include "wifi_board.h"
 #include "cores3_audio_codec.h"
 #include "display/lcd_display.h"
@@ -15,7 +18,7 @@
 #include <esp_lcd_panel_ops.h>
 #include <esp_lcd_ili9341.h>
 #include <esp_timer.h>
-#include "esp32_camera.h"
+// #include "esp32_camera.h"
 
 
 #define TAG "M5StackCoreS3Board"
@@ -132,12 +135,12 @@ private:
     Aw9523* aw9523_;
     Ft6336* ft6336_;
     LcdDisplay* display_;
-    Esp32Camera* camera_;
+    // Esp32Camera* camera_;
     esp_timer_handle_t touchpad_timer_;
     PowerSaveTimer* power_save_timer_;
 
     void InitializePowerSaveTimer() {
-        power_save_timer_ = new PowerSaveTimer(-1, 60, 300);
+        power_save_timer_ = new PowerSaveTimer(-1, 600, 3000);
         power_save_timer_->OnEnterSleepMode([this]() {
             ESP_LOGI(TAG, "Enabling sleep mode");
             auto display = GetDisplay();
@@ -237,23 +240,41 @@ private:
     }
 
     void InitializeFt6336TouchPad() {
-        ESP_LOGI(TAG, "Init FT6336");
-        ft6336_ = new Ft6336(i2c_bus_, 0x38);
-        
-        // 创建定时器，20ms 间隔
-        esp_timer_create_args_t timer_args = {
-            .callback = [](void* arg) {
-                M5StackCoreS3Board* board = (M5StackCoreS3Board*)arg;
-                board->PollTouchpad();
+        esp_lcd_touch_handle_t tp;
+        esp_lcd_touch_config_t tp_cfg = {
+            .x_max = DISPLAY_WIDTH,
+            .y_max = DISPLAY_HEIGHT,
+            .rst_gpio_num = GPIO_NUM_NC,
+            .int_gpio_num = GPIO_NUM_NC,
+            .levels = {
+                .reset = 0,
+                .interrupt = 0,
             },
-            .arg = this,
-            .dispatch_method = ESP_TIMER_TASK,
-            .name = "touchpad_timer",
-            .skip_unhandled_events = true,
+            .flags = {
+                .swap_xy = 0,
+                .mirror_x = 0,
+                .mirror_y = 0,
+            },
         };
-        
-        ESP_ERROR_CHECK(esp_timer_create(&timer_args, &touchpad_timer_));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(touchpad_timer_, 20 * 1000));
+        esp_lcd_panel_io_handle_t tp_io_handle = NULL;
+        esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
+        tp_io_config.scl_speed_hz = 400 * 1000;
+        ESP_ERROR_CHECK(esp_lcd_new_panel_io_i2c(i2c_bus_, &tp_io_config, &tp_io_handle));
+        ESP_LOGI(TAG, "Initialize touch controller");
+        ESP_ERROR_CHECK(esp_lcd_touch_new_i2c_ft5x06(tp_io_handle, &tp_cfg, &tp));
+        const lvgl_port_touch_cfg_t touch_cfg = {
+            .disp = lv_display_get_default(), 
+            .handle = tp,
+        };
+        lvgl_port_add_touch(&touch_cfg);
+        display_->SetEmotionClickable([](lv_event_t *e) -> void {
+            lv_event_code_t code = lv_event_get_code(e);
+            if (code == LV_EVENT_CLICKED) {
+                auto& app = Application::GetInstance();
+                app.ToggleChatState();
+            }
+        });
+        ESP_LOGI(TAG, "Touch panel initialized successfully");
     }
 
     void InitializeSpi() {
@@ -314,32 +335,32 @@ private:
 
      void InitializeCamera() {
         // Open camera power
-        camera_config_t config = {};
-        config.pin_d0 = CAMERA_PIN_D0;
-        config.pin_d1 = CAMERA_PIN_D1;
-        config.pin_d2 = CAMERA_PIN_D2;
-        config.pin_d3 = CAMERA_PIN_D3;
-        config.pin_d4 = CAMERA_PIN_D4;
-        config.pin_d5 = CAMERA_PIN_D5;
-        config.pin_d6 = CAMERA_PIN_D6;
-        config.pin_d7 = CAMERA_PIN_D7;
-        config.pin_xclk = CAMERA_PIN_XCLK;
-        config.pin_pclk = CAMERA_PIN_PCLK;
-        config.pin_vsync = CAMERA_PIN_VSYNC;
-        config.pin_href = CAMERA_PIN_HREF;
-        config.pin_sccb_sda = CAMERA_PIN_SIOD;  
-        config.pin_sccb_scl = CAMERA_PIN_SIOC;
-        config.sccb_i2c_port = 1;
-        config.pin_pwdn = CAMERA_PIN_PWDN;
-        config.pin_reset = CAMERA_PIN_RESET;
-        config.xclk_freq_hz = XCLK_FREQ_HZ;
-        config.pixel_format = PIXFORMAT_RGB565;
-        config.frame_size = FRAMESIZE_QVGA;
-        config.jpeg_quality = 12;
-        config.fb_count = 1;
-        config.fb_location = CAMERA_FB_IN_PSRAM;
-        config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
-        camera_ = new Esp32Camera(config);
+        // camera_config_t config = {};
+        // config.pin_d0 = CAMERA_PIN_D0;
+        // config.pin_d1 = CAMERA_PIN_D1;
+        // config.pin_d2 = CAMERA_PIN_D2;
+        // config.pin_d3 = CAMERA_PIN_D3;
+        // config.pin_d4 = CAMERA_PIN_D4;
+        // config.pin_d5 = CAMERA_PIN_D5;
+        // config.pin_d6 = CAMERA_PIN_D6;
+        // config.pin_d7 = CAMERA_PIN_D7;
+        // config.pin_xclk = CAMERA_PIN_XCLK;
+        // config.pin_pclk = CAMERA_PIN_PCLK;
+        // config.pin_vsync = CAMERA_PIN_VSYNC;
+        // config.pin_href = CAMERA_PIN_HREF;
+        // config.pin_sccb_sda = CAMERA_PIN_SIOD;  
+        // config.pin_sccb_scl = CAMERA_PIN_SIOC;
+        // config.sccb_i2c_port = 1;
+        // config.pin_pwdn = CAMERA_PIN_PWDN;
+        // config.pin_reset = CAMERA_PIN_RESET;
+        // config.xclk_freq_hz = XCLK_FREQ_HZ;
+        // config.pixel_format = PIXFORMAT_RGB565;
+        // config.frame_size = FRAMESIZE_QVGA;
+        // config.jpeg_quality = 12;
+        // config.fb_count = 1;
+        // config.fb_location = CAMERA_FB_IN_PSRAM;
+        // config.grab_mode = CAMERA_GRAB_WHEN_EMPTY;
+        // camera_ = new Esp32Camera(config);
     }
 
     // 物联网初始化，添加对 AI 可见设备
@@ -385,7 +406,7 @@ public:
     }
 
     virtual Camera* GetCamera() override {
-        return camera_;
+        return nullptr;
     }
 
     virtual bool GetBatteryLevel(int &level, bool& charging, bool& discharging) override {

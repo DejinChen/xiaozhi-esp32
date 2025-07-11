@@ -121,6 +121,10 @@ Http* WifiBoard::CreateHttp() {
 WebSocket* WifiBoard::CreateWebSocket() {
     Settings settings("websocket", false);
     std::string url = settings.GetString("url");
+#if CONFIG_CUSTOM_WEBSOCKET_URL
+    // url = CONFIG_CUSTOM_WEBSOCKET_URL;
+    url = "ws://192.168.50.191:8000/xiaozhi/v1/";
+#endif
     if (url.find("wss://") == 0) {
         return new WebSocket(new TlsTransport());
     } else {

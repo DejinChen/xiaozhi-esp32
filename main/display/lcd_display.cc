@@ -339,7 +339,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_border_color(content_, current_theme_.border, 0); // Border color for chat area
 
     // Enable scrolling for chat content
-    lv_obj_set_scrollbar_mode(content_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scrollbar_mode(content_, LV_SCROLLBAR_MODE_ACTIVE);
     lv_obj_set_scroll_dir(content_, LV_DIR_VER);
     
     // Create a flex container for chat messages

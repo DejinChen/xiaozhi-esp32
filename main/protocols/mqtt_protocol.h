@@ -20,7 +20,7 @@
 
 #define MQTT_PROTOCOL_SERVER_HELLO_EVENT (1 << 0)
 
-class MqttProtocol : public Protocol {
+class MqttProtocol : public BaseProtocol {
 public:
     MqttProtocol();
     ~MqttProtocol();
