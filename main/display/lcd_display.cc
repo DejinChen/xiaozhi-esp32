@@ -461,7 +461,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_bg_color(content_, lvgl_theme->chat_background_color(), 0); // Background for chat area
 
     // Enable scrolling for chat content
-    lv_obj_set_scrollbar_mode(content_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scrollbar_mode(content_, LV_SCROLLBAR_MODE_ACTIVE);
     lv_obj_set_scroll_dir(content_, LV_DIR_VER);
     
     // Create a flex container for chat messages

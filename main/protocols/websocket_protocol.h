@@ -10,7 +10,7 @@
 
 #define WEBSOCKET_PROTOCOL_SERVER_HELLO_EVENT (1 << 0)
 
-class WebsocketProtocol : public Protocol {
+class WebsocketProtocol : public BaseProtocol {
 public:
     WebsocketProtocol();
     ~WebsocketProtocol();

@@ -1,0 +1,10 @@
+## IDF Component Manager Manifest File
+dependencies:
+  dejinchen/esp_matter:
+    version: ^1.4.1
+    rules:
+      - if: target in [esp32s3]
+  espressif/esp_rainmaker:
+    version: 1.5.7
+    rules:
+      - if: target in [esp32s3]

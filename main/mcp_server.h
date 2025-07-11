@@ -52,6 +52,7 @@ using ReturnValue = std::variant<bool, int, std::string, cJSON*, ImageContent*>;
 enum PropertyType {
     kPropertyTypeBoolean,
     kPropertyTypeInteger,
+    kPropertyTypeUnsignedInteger,
     kPropertyTypeString
 };
 
@@ -59,7 +60,7 @@ class Property {
 private:
     std::string name_;
     PropertyType type_;
-    std::variant<bool, int, std::string> value_;
+    std::variant<bool, int, uint32_t, std::string> value_;
     bool has_default_value_;
     std::optional<int> min_value_;  // 新增：整数最小值
     std::optional<int> max_value_;  // 新增：整数最大值
@@ -78,7 +79,7 @@ public:
 
     Property(const std::string& name, PropertyType type, int min_value, int max_value)
         : name_(name), type_(type), has_default_value_(false), min_value_(min_value), max_value_(max_value) {
-        if (type != kPropertyTypeInteger) {
+        if (type != kPropertyTypeInteger && type != kPropertyTypeUnsignedInteger) {
             throw std::invalid_argument("Range limits only apply to integer properties");
         }
     }
@@ -86,6 +87,17 @@ public:
     Property(const std::string& name, PropertyType type, int default_value, int min_value, int max_value)
         : name_(name), type_(type), has_default_value_(true), min_value_(min_value), max_value_(max_value) {
         if (type != kPropertyTypeInteger) {
+            throw std::invalid_argument("Range limits only apply to integer properties");
+        }
+        if (default_value < min_value || default_value > max_value) {
+            throw std::invalid_argument("Default value must be within the specified range");
+        }
+        value_ = default_value;
+    }
+
+    Property(const std::string& name, PropertyType type, uint32_t default_value, int min_value, int max_value)
+        : name_(name), type_(type), has_default_value_(true), min_value_(min_value), max_value_(max_value) {
+        if (type != kPropertyTypeUnsignedInteger) {
             throw std::invalid_argument("Range limits only apply to integer properties");
         }
         if (default_value < min_value || default_value > max_value) {
@@ -139,6 +151,17 @@ public:
             if (max_value_.has_value()) {
                 cJSON_AddNumberToObject(json, "maximum", max_value_.value());
             }
+        } else if (type_ == kPropertyTypeUnsignedInteger) {
+            cJSON_AddStringToObject(json, "type", "unsigned integer");
+            if (has_default_value_) {
+                cJSON_AddNumberToObject(json, "default", value<uint32_t>());
+            }
+            if (min_value_.has_value()) {
+                cJSON_AddNumberToObject(json, "minimum", min_value_.value());
+            }
+            if (max_value_.has_value()) {
+                cJSON_AddNumberToObject(json, "maximum", max_value_.value());
+            }
         } else if (type_ == kPropertyTypeString) {
             cJSON_AddStringToObject(json, "type", "string");
             if (has_default_value_) {
@@ -177,6 +200,8 @@ public:
 
     auto begin() { return properties_.begin(); }
     auto end() { return properties_.end(); }
+    auto begin() const { return properties_.begin(); }
+    auto end() const{ return properties_.end(); }
 
     std::vector<std::string> GetRequired() const {
         std::vector<std::string> required;

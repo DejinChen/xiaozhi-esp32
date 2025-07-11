@@ -10,5 +10,7 @@ set(PROJECT_VER "2.0.5")
 add_compile_options(-Wno-missing-field-initializers)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+idf_build_set_property(RAINMAKER_ENABLED 1)
 project(xiaozhi)
 
+idf_build_set_property(CXX_COMPILE_OPTIONS "-DCHIP_CONFIG_MAX_ATTRIBUTE_STORE_ELEMENT_SIZE=2560" APPEND)
