@@ -26,6 +26,7 @@ using namespace esp_matter;
 using namespace chip::app::Clusters;
 using esp_matter::controller::device_mgr::matter_device_t;
 using namespace chip::TLV;
+using namespace esp_matter::controller;
 
 static const char *TAG = "app_driver";
 extern uint16_t app_endpoint_id;
@@ -56,14 +57,18 @@ typedef struct cluster_comand {
     std::string endpoint_ids_;
     std::string cluster_ids_;
     std::string attribute_ids_;
-    std::function<void(std::string &str)> _callback;
+    std::function<void(std::string &str)> success_callback_;
+    std::function<void(std::string &str)> error_callback_;
     cluster_comand(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t command_id,
-                   std::string &command_args)
+                   std::string &command_args, std::function<void(std::string &str)> success_callback,
+                   std::function<void(std::string &str)> error_callback)
         : node_id_(node_id)
         , endpoint_id_(endpoint_id)
         , cluster_id_(cluster_id)
         , command_id_(command_id)
         , command_args_(command_args)
+        , success_callback_(success_callback)
+        , error_callback_(error_callback)
     {}
 
     cluster_comand(uint64_t node_id, uint32_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id,
@@ -72,7 +77,7 @@ typedef struct cluster_comand {
         , endpoint_id_(endpoint_id)
         , cluster_id_(cluster_id)
         , attribute_id_(attribute_id)
-        , _callback(callback)
+        , success_callback_(callback)
     {}
 } cluster_comand_t;
 
@@ -87,9 +92,29 @@ static void send_cluster_command_cb(intptr_t arg)
     if (ptr) {
         esp_matter::controller::send_invoke_cluster_command(ptr->node_id_, ptr->endpoint_id_, ptr->cluster_id_,
                                                             ptr->command_id_, ptr->command_args_.c_str());
-    }
 
-    delete ptr;
+        cluster_command *cmd = chip::Platform::New<cluster_command>(
+            ptr->node_id_, ptr->endpoint_id_, ptr->cluster_id_, ptr->command_id_, ptr->command_args_.c_str(),
+            chip::NullOptional,
+            [ptr](void *, const ConcreteCommandPath &, const StatusIB &, TLVReader *) -> void {
+                std::string str("exec success");
+                ESP_LOGI(TAG, "command exec success");
+                ptr->success_callback_(str);
+                delete ptr;
+            },
+            [ptr](void *, CHIP_ERROR error) -> void {
+                std::string str("command exec error");
+                ESP_LOGI(TAG, "command exec error");
+                ptr->error_callback_(str);
+                delete ptr;
+            });
+        if (!cmd) {
+            ESP_LOGE(TAG, "Failed to alloc memory for cluster_command");
+            return;
+        }
+
+        cmd->send_command();
+    }
 }
 
 namespace esp_matter {
@@ -137,7 +162,7 @@ static void read_cluster_attribute_cb(intptr_t arg)
         controller::read_command *cmd = chip::Platform::New<controller::read_command>(
             ptr->node_id_, std::move(attr_paths), std::move(event_paths),
             [](uint64_t remote_node_id, const chip::app::ConcreteDataAttributePath &path,
-                  chip::TLV::TLVReader *data) -> void {
+               chip::TLV::TLVReader *data) -> void {
                 if (!data) {
                     return;
                 }
@@ -186,9 +211,11 @@ static void read_cluster_attribute_cb(intptr_t arg)
 }
 
 CHIP_ERROR send_cluster_command(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t command_id,
-                                std::string &command_args)
+                                std::string &command_args, std::function<void(std::string &str)> success_callback,
+                                std::function<void(std::string &str)> error_callback)
 {
-    cluster_comand_t *command_arg = new cluster_comand_t(node_id, endpoint_id, cluster_id, command_id, command_args);
+    cluster_comand_t *command_arg = new cluster_comand_t(node_id, endpoint_id, cluster_id, command_id, command_args,
+                                                         success_callback, error_callback);
     return chip::DeviceLayer::PlatformMgr().ScheduleWork(send_cluster_command_cb, (intptr_t)command_arg);
 }
 

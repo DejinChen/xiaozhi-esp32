@@ -22,7 +22,8 @@ bool esp_matter_factoryreset();
 matter_device_t *esp_matter_get_device_list();
 
 CHIP_ERROR send_cluster_command(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t command_id,
-                                std::string &command_args);
+                                std::string &command_args, std::function<void(std::string &str)> success_callback,
+                                std::function<void(std::string &str)> error_callback);
 
 CHIP_ERROR read_cluster_attribute(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id,
                                   std::function<void(std::string &str)> callback);

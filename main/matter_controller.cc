@@ -131,6 +131,7 @@ esp_err_t MatterController::Initialize()
                     level_cluster.AddAttribute(LevelControl::Attributes::CurrentLevel::Id, std::string("CurrentLevel"));
 
                     matter_device_list.AddClusterToDevice(current->node_id, 1, level_cluster);
+                    matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
                 } break;
                 case ESP_MATTER_ON_OFF_PLUGIN_UNIT_DEVICE_TYPE_ID:
                     matter_device_list.AddDevice(current->endpoints[0].device_name, "On/OffPlug", current->node_id, 1);
@@ -172,7 +173,7 @@ esp_err_t MatterController::Initialize()
 
     McpServer::GetInstance().AddTool(
         "self.matter.control_device",
-        "Control a device from the device list.\n"
+        "Control a matter device, the device MUST comes from device list (self.matter.get_device)\n"
         "Args:\n"
         "`node_id`, `endpoint_id`, `cluster_id`, `command_id`, `command_args`:\n"
         "  - If there are no arguments, `command_args` should be \"{}\".\n"
@@ -197,9 +198,15 @@ esp_err_t MatterController::Initialize()
         [](const PropertyList &properties) -> ReturnValue {
             uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
             std::string command_args(properties["command_args"].value<std::string>());
-            return send_cluster_command(node_id, properties["endpoint_id"].value<uint32_t>(),
-                                        properties["cluster_id"].value<uint32_t>(),
-                                        properties["command_id"].value<uint32_t>(), command_args) == CHIP_NO_ERROR
+            return send_cluster_command(
+                       node_id, properties["endpoint_id"].value<uint32_t>(), properties["cluster_id"].value<uint32_t>(),
+                       properties["command_id"].value<uint32_t>(), command_args,
+                       [](std::string &str) {
+                           // Application::GetInstance().WakeWordInvoke(str);
+                       },
+                       [](std::string &str) {
+                           // Application::GetInstance().WakeWordInvoke(str);
+                       }) == CHIP_NO_ERROR
                 ? ReturnValue(std::string("Have sent command, waiting execution"))
                 : ReturnValue(std::string("failed"));
         });
