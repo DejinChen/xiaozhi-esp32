@@ -470,10 +470,10 @@ void Application::Start() {
     MatterController::GetInstance()->Initialize();
     codec->SetOutputVolume(30);
 
-    if (ota_.HasMqttConfig()) {
+    if (ota.HasMqttConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
         // protocol_ = std::make_unique<MqttProtocol>();
-    } else if (ota_.HasWebsocketConfig()) {
+    } else if (ota.HasWebsocketConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
     } else {
         ESP_LOGW(TAG, "No protocol specified in the OTA config, using MQTT");
