@@ -55,7 +55,7 @@ void subscribe_command::on_device_connection_failure_fcn(void *context, const Sc
     subscribe_command *cmd = (subscribe_command *)context;
 
     if (cmd->subscribe_failure_cb)
-        cmd->subscribe_failure_cb((void *)cmd);
+        cmd->subscribe_failure_cb((void *)cmd, peerId.GetNodeId());
 
     chip::Platform::Delete(cmd);
     return;

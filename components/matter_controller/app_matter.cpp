@@ -32,6 +32,8 @@
 #include <esp_matter_providers.h>
 #endif
 
+#include "esp_rmaker_utils.h"
+
 static const char *TAG = "app_main";
 
 using namespace esp_matter;
@@ -170,5 +172,6 @@ bool get_esp_matter_commissioning_state()
 
 bool esp_matter_factoryreset()
 {
+    // esp_rmaker_factory_reset(0, 10);
     return esp_matter::factory_reset() == ESP_OK;
 }

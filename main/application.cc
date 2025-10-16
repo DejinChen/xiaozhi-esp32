@@ -408,10 +408,11 @@ void Application::Start() {
     mcp_server.AddUserOnlyTools();
 
     MatterController::GetInstance()->Initialize();
-    codec->SetOutputVolume(30);
+    // codec->SetOutputVolume(30);
 
     if (ota.HasMqttConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
+        // ESP_LOGW(TAG, "MqttProtocol");
         // protocol_ = std::make_unique<MqttProtocol>();
     } else if (ota.HasWebsocketConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
@@ -441,6 +442,7 @@ void Application::Start() {
         }
     });
     protocol_->OnAudioChannelClosed([this, &board]() {
+        MatterController::GetInstance()->SetDeviceListState(false);
         board.SetPowerSaveMode(true);
         Schedule([this]() {
             auto display = Board::GetInstance().GetDisplay();
