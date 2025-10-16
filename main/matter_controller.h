@@ -17,8 +17,19 @@ public:
         return &instance;
     }
 
+    void SetDeviceListState(bool state)
+    {
+        get_device_state_ = state;
+    }
+
+    bool GetDeviceListState()
+    {
+        return get_device_state_;
+    }
+
 private:
     MatterController() = default;
+    bool get_device_state_ = false;
 };
 
 class MatterDeviceList {
@@ -171,6 +182,7 @@ public:
             cJSON_AddStringToObject(json, "type", device_type_.c_str());
             char node_id_str[17] = {0};
             this->uint64_to_hex(node_id_, node_id_str);
+            // snprintf(node_id_str, sizeof(node_id_str), "%016llX", node_id_);
             cJSON_AddStringToObject(json, "node_id", node_id_str);
             cJSON_AddNumberToObject(json, "endpoint_id", endpoint_id_);
 
@@ -196,7 +208,7 @@ public:
                 int shift = (15 - i) * 4;
                 out_str[i] = hex[(value >> shift) & 0xF];
             }
-            out_str[17] = '\0';
+            out_str[16] = '\0';
         }
 
         uint64_t GetNodeId() const { return node_id_; }

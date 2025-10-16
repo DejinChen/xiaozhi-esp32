@@ -675,7 +675,7 @@ static void uint64_to_hex(uint64_t value, char *out_str) {
         int shift = (15 - i) * 4;
         out_str[i] = hex[(value >> shift) & 0xF];
     }
-    out_str[17] = '\0';
+    out_str[16] = '\0';
 }
 
 static esp_err_t fetch_device_noc(const char *endpoint_url,

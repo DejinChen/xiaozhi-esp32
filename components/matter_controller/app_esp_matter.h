@@ -11,6 +11,18 @@
 #include "esp_matter.h"
 #include "matter_device.h"
 
+/** Standard max values (used for remapping attributes) */
+#define STANDARD_BRIGHTNESS 100
+#define STANDARD_HUE 360
+#define STANDARD_SATURATION 100
+#define STANDARD_TEMPERATURE_FACTOR 1000000
+
+/** Matter max values (used for remapping attributes) */
+#define MATTER_BRIGHTNESS 254
+#define MATTER_HUE 254
+#define MATTER_SATURATION 254
+#define MATTER_TEMPERATURE_FACTOR 1000000
+
 void start_esp_matter();
 
 bool get_esp_matter_initialized();
@@ -27,3 +39,9 @@ CHIP_ERROR send_cluster_command(uint64_t node_id, uint16_t endpoint_id, uint32_t
 
 CHIP_ERROR read_cluster_attribute(uint64_t node_id, uint16_t endpoint_id, uint32_t cluster_id, uint32_t attribute_id,
                                   std::function<void(std::string &str)> callback);
+
+CHIP_ERROR send_light_onoff_command(uint64_t node_id, const std::string &action);
+CHIP_ERROR send_light_level_command(uint64_t node_id, uint8_t level);
+CHIP_ERROR send_light_hue_command(uint64_t node_id, uint8_t hue);
+CHIP_ERROR send_light_saturation_command(uint64_t node_id, uint8_t saturation);
+std::string get_light_state_command(uint64_t node_id);

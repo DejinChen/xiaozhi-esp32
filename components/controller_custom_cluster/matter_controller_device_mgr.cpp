@@ -214,7 +214,7 @@ esp_err_t init(uint16_t endpoint_id,
   uint8_t fabric_index;
   bool user_noc_installed = false;
   s_device_list_update_cb = dev_list_update_cb;
-  if (xTaskCreate(device_mgr_task, "device_mgr", 4096, NULL, 5,
+  if (xTaskCreate(device_mgr_task, "device_mgr", 6144, NULL, 5,
                   &s_device_mgr_task) != pdTRUE) {
     ESP_LOGE(TAG, "Failed to create device mgr task");
     return ESP_ERR_NO_MEM;

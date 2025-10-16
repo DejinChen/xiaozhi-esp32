@@ -71,19 +71,22 @@ esp_err_t MatterController::Initialize()
             }
             return ReturnValue(std::string("Has been commissioned"));
         });
+    
+            McpServer::GetInstance().AddTool("self.reboot", "Reboot device / 重启设备",
+                                     PropertyList(), [](const PropertyList &properties) -> ReturnValue {
+                                        esp_restart();
+                                         return ReturnValue(std::string("success"));
+                                     });
 
-    McpServer::GetInstance().AddTool("self.matter.factory_reset", "Set the matter controller to factory reset state.",
+    McpServer::GetInstance().AddTool("self.matter.factory_reset", "factory reset / 恢复出厂设置",
                                      PropertyList(), [](const PropertyList &properties) -> ReturnValue {
                                          esp_matter_factoryreset();
                                          return ReturnValue(std::string("success"));
                                      });
 
     McpServer::GetInstance().AddTool(
-        "self.matter.get_device",
-        "If has been commissioned, you can call `self.matter.get_device` to get the list of "
-        "devices can be controlled, such light, plug, thermostat, etc.\n"
-        "Return:\n A JSON object that provides the devices that can be control.",
-        PropertyList(), [](const PropertyList &properties) -> ReturnValue {
+        "self.matter.get_device_list", "获取可以被控制的设备列表。", PropertyList(),
+        [this](const PropertyList &properties) -> ReturnValue {
             matter_device_t *device_list = esp_matter_get_device_list();
             if (!device_list) {
                 esp_matter::controller::device_mgr::update_device_list(0);
@@ -108,7 +111,7 @@ esp_err_t MatterController::Initialize()
                 switch (current->endpoints[0].device_type_id) {
                 case ESP_MATTER_ON_OFF_LIGHT_DEVICE_TYPE_ID: {
                     matter_device_list.AddDevice(current->endpoints[0].device_name, "On/OffLight", current->node_id, 1);
-                    matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
+                    // matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
                 } break;
                 case ESP_MATTER_EXTENDED_COLOR_LIGHT_DEVICE_TYPE_ID: {
                     matter_device_list.AddDevice(current->endpoints[0].device_name, "ColorLight", current->node_id, 1);
@@ -130,12 +133,12 @@ esp_err_t MatterController::Initialize()
                     level_cluster.AddCommand(move_to_level_command);
                     level_cluster.AddAttribute(LevelControl::Attributes::CurrentLevel::Id, std::string("CurrentLevel"));
 
-                    matter_device_list.AddClusterToDevice(current->node_id, 1, level_cluster);
-                    matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
+                    // matter_device_list.AddClusterToDevice(current->node_id, 1, level_cluster);
+                    // matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
                 } break;
                 case ESP_MATTER_ON_OFF_PLUGIN_UNIT_DEVICE_TYPE_ID:
                     matter_device_list.AddDevice(current->endpoints[0].device_name, "On/OffPlug", current->node_id, 1);
-                    matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
+                    // matter_device_list.AddClusterToDevice(current->node_id, 1, onoff_cluster);
                     break;
                 case ESP_MATTER_THERMOSTAT_DEVICE_TYPE_ID: {
                     matter_device_list.AddDevice(current->endpoints[0].device_name, "Thermostat", current->node_id, 1);
@@ -156,7 +159,7 @@ esp_err_t MatterController::Initialize()
                     thermostat_cluster.AddCommand(setpoint_raise_lower_command);
                     thermostat_cluster.AddAttribute(Thermostat::Attributes::LocalTemperature::Id,
                                                     std::string("LocalTemperature"));
-                    matter_device_list.AddClusterToDevice(current->node_id, 1, thermostat_cluster);
+                    // matter_device_list.AddClusterToDevice(current->node_id, 1, thermostat_cluster);
                 } break;
                 default:
                     ESP_LOGW(TAG, "Unknown device type: 0x%04" PRIX32, current->endpoints[0].device_type_id);
@@ -168,47 +171,147 @@ esp_err_t MatterController::Initialize()
                 current = current->next;
             }
             ESP_LOGI(TAG, "devices %s", matter_device_list.to_json().c_str());
+            get_device_state_ = true;
             return ReturnValue(matter_device_list.to_json());
         });
 
+    // McpServer::GetInstance().AddTool(
+    //     "self.matter.control_device",
+    //     "Control a matter device, the device MUST comes from device list (self.matter.get_device)\n"
+    //     "Args:\n"
+    //     "`node_id`, `endpoint_id`, `cluster_id`, `command_id`, `command_args`:\n"
+    //     "  - If there are no arguments, `command_args` should be \"{}\".\n"
+    //     "  - Otherwise, it should be a JSON object string.\n"
+    //     "    Each key must be in the format \"<TagNumber>:<DataType>\" where:\n"
+    //     "      - TagNumber indicates the argument order (e.g., 0 for the first argument).\n"
+    //     "      - DataType specifies the value type:\n"
+    //     "          - 'I32' for integer\n"
+    //     "          - 'U32' for unsigned integer\n"
+    //     "          - 'STR' for string\n"
+    //     "Example:\n"
+    //     "For the `move_to_level` command, `command_args` should be:\n"
+    //     "\"{\"0:U32\": 10, \"1:U32\": 0, \"2:U32\": 0, \"3:U32\": 0}\","
+    //     "Or `command_args` can refer to "
+    //     "https://docs.espressif.com/projects/esp-matter/en/latest/esp32/developing.html#cluster-commands. \n"
+    //     "Return:\n"
+    //     "A string indicating command sending state. Note that the actual execution may take some time.\n",
+    //     PropertyList({Property("node_id", kPropertyTypeString), Property("endpoint_id",
+    //     kPropertyTypeUnsignedInteger),
+    //                   Property("cluster_id", kPropertyTypeUnsignedInteger),
+    //                   Property("command_id", kPropertyTypeUnsignedInteger),
+    //                   Property("command_args", kPropertyTypeString)}),
+    //     [](const PropertyList &properties) -> ReturnValue {
+    //         uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
+    //         std::string command_args(properties["command_args"].value<std::string>());
+    //         return send_cluster_command(
+    //                    node_id, properties["endpoint_id"].value<uint32_t>(),
+    //                    properties["cluster_id"].value<uint32_t>(), properties["command_id"].value<uint32_t>(),
+    //                    command_args,
+    //                    [](std::string &str) {
+    //                        // Application::GetInstance().WakeWordInvoke(str);
+    //                    },
+    //                    [](std::string &str) {
+    //                        // Application::GetInstance().WakeWordInvoke(str);
+    //                    }) == CHIP_NO_ERROR
+    //             ? ReturnValue(std::string("Have sent command, waiting execution"))
+    //             : ReturnValue(std::string("failed"));
+    //     });
+
     McpServer::GetInstance().AddTool(
-        "self.matter.control_device",
-        "Control a matter device, the device MUST comes from device list (self.matter.get_device)\n"
-        "Args:\n"
-        "`node_id`, `endpoint_id`, `cluster_id`, `command_id`, `command_args`:\n"
-        "  - If there are no arguments, `command_args` should be \"{}\".\n"
-        "  - Otherwise, it should be a JSON object string.\n"
-        "    Each key must be in the format \"<TagNumber>:<DataType>\" where:\n"
-        "      - TagNumber indicates the argument order (e.g., 0 for the first argument).\n"
-        "      - DataType specifies the value type:\n"
-        "          - 'I32' for integer\n"
-        "          - 'U32' for unsigned integer\n"
-        "          - 'STR' for string\n"
-        "Example:\n"
-        "For the `move_to_level` command, `command_args` should be:\n"
-        "\"{\"0:U32\": 10, \"1:U32\": 0, \"2:U32\": 0, \"3:U32\": 0}\","
-        "Or `command_args` can refer to "
-        "https://docs.espressif.com/projects/esp-matter/en/latest/esp32/developing.html#cluster-commands. \n"
-        "Return:\n"
-        "A string indicating command sending state. Note that the actual execution may take some time.\n",
-        PropertyList({Property("node_id", kPropertyTypeString), Property("endpoint_id", kPropertyTypeUnsignedInteger),
-                      Property("cluster_id", kPropertyTypeUnsignedInteger),
-                      Property("command_id", kPropertyTypeUnsignedInteger),
-                      Property("command_args", kPropertyTypeString)}),
-        [](const PropertyList &properties) -> ReturnValue {
+        "self.matter.light_onoff",
+        "开关灯(如果没有获取过设备列表，需要先调用 `self.matter.get_device_list`)。有以下行为：\n"
+        "On: 开灯； Off: 关灯； Toggle: 反转开关状态",
+        PropertyList({
+            Property("node_id", kPropertyTypeString),
+            Property("action", kPropertyTypeString),
+        }),
+        [this](const PropertyList &properties) -> ReturnValue {
+            if (this->get_device_state_ == false) {
+                return ReturnValue(std::string("Please get device list first"));
+            }
             uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
-            std::string command_args(properties["command_args"].value<std::string>());
-            return send_cluster_command(
-                       node_id, properties["endpoint_id"].value<uint32_t>(), properties["cluster_id"].value<uint32_t>(),
-                       properties["command_id"].value<uint32_t>(), command_args,
-                       [](std::string &str) {
-                           // Application::GetInstance().WakeWordInvoke(str);
-                       },
-                       [](std::string &str) {
-                           // Application::GetInstance().WakeWordInvoke(str);
-                       }) == CHIP_NO_ERROR
-                ? ReturnValue(std::string("Have sent command, waiting execution"))
-                : ReturnValue(std::string("failed"));
+            const std::string &action = properties["action"].value<std::string>();
+            CHIP_ERROR err = send_light_onoff_command(node_id, action);
+            return err == CHIP_NO_ERROR       ? ReturnValue(std::string("Have sent command, waiting execution"))
+                : err == CHIP_ERROR_NOT_FOUND ? ReturnValue(std::string("Node id not found in device list"))
+                                              : ReturnValue(std::string("Failed"));
+        });
+
+    McpServer::GetInstance().AddTool(
+        "self.matter.light_brightness",
+        "控制灯的亮度(如果没有获取过设备列表，需要先调用 `self.matter.get_device_list`)\n",
+        PropertyList({
+            Property("node_id", kPropertyTypeString),
+            Property("brightness", kPropertyTypeInteger, 0, STANDARD_BRIGHTNESS),
+        }),
+        [this](const PropertyList &properties) -> ReturnValue {
+            if (this->get_device_state_ == false) {
+                return ReturnValue(std::string("Please get device list first"));
+            }
+            int level = properties["brightness"].value<int>();
+            uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
+
+            CHIP_ERROR err =
+                send_light_level_command(node_id, REMAP_TO_RANGE(level, STANDARD_BRIGHTNESS, MATTER_BRIGHTNESS));
+            return err == CHIP_NO_ERROR       ? ReturnValue(std::string("Have sent command, waiting execution"))
+                : err == CHIP_ERROR_NOT_FOUND ? ReturnValue(std::string("Node id not found in device list"))
+                                              : ReturnValue(std::string("Failed"));
+        });
+
+    McpServer::GetInstance().AddTool(
+        "self.matter.light_hue",
+        "控制灯的色调(如果没有获取过设备列表，需要先调用 `self.matter.get_device_list`), "
+        "色调为0表示红色，300表示紫色。如果饱和度为0，则色调无效，灯会显示白色",
+        PropertyList({
+            Property("node_id", kPropertyTypeString),
+            Property("hue", kPropertyTypeInteger, 0, STANDARD_HUE),
+        }),
+        [this](const PropertyList &properties) -> ReturnValue {
+            if (this->get_device_state_ == false) {
+                return ReturnValue(std::string("Please get device list first"));
+            }
+            uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
+            int hue = properties["hue"].value<int>();
+            CHIP_ERROR err = send_light_hue_command(node_id, REMAP_TO_RANGE(hue, STANDARD_HUE, MATTER_HUE));
+            return err == CHIP_NO_ERROR       ? ReturnValue(std::string("Have sent command, waiting execution"))
+                : err == CHIP_ERROR_NOT_FOUND ? ReturnValue(std::string("Node id not found in device list"))
+                                              : ReturnValue(std::string("Failed"));
+        });
+
+    McpServer::GetInstance().AddTool(
+        "self.matter.light_saturation",
+        "控制灯的饱和度(如果没有获取过设备列表，需要先调用 `self.matter.get_device_list`), "
+        "饱和度为0为白色(无论是什么色调)，100表示全色",
+        PropertyList({
+            Property("node_id", kPropertyTypeString),
+            Property("saturation", kPropertyTypeInteger, 0, STANDARD_SATURATION),
+        }),
+        [this](const PropertyList &properties) -> ReturnValue {
+            if (this->get_device_state_ == false) {
+                return ReturnValue(std::string("Please get device list first"));
+            }
+            uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
+            int saturation = properties["saturation"].value<int>();
+
+            CHIP_ERROR err = send_light_saturation_command(
+                node_id, REMAP_TO_RANGE(saturation, STANDARD_SATURATION, MATTER_SATURATION));
+            return err == CHIP_NO_ERROR       ? ReturnValue(std::string("Have sent command, waiting execution"))
+                : err == CHIP_ERROR_NOT_FOUND ? ReturnValue(std::string("Node id not found in device list"))
+                                              : ReturnValue(std::string("Failed"));
+        });
+
+    McpServer::GetInstance().AddTool(
+        "self.matter.get_light_state", "获取灯的状态(如果没有获取过设备列表，需要先调用 `self.matter.get_device_list`)",
+        PropertyList({
+            Property("node_id", kPropertyTypeString),
+        }),
+        [this](const PropertyList &properties) -> ReturnValue {
+            if (this->get_device_state_ == false) {
+                return ReturnValue(std::string("Please get device list first"));
+            }
+            uint64_t node_id = std::stoull(properties["node_id"].value<std::string>(), nullptr, 16);
+
+            return ReturnValue(get_light_state_command(node_id));
         });
 
     // /* method: notifications is not implemented in xiaozhi-server */
