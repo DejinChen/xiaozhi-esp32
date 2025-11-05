@@ -408,7 +408,7 @@ void Application::Start() {
     mcp_server.AddUserOnlyTools();
 
     MatterController::GetInstance()->Initialize();
-    // codec->SetOutputVolume(30);
+    codec->SetOutputVolume(30);
 
     if (ota.HasMqttConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
@@ -563,6 +563,8 @@ void Application::Schedule(std::function<void()> callback) {
     xEventGroupSetBits(event_group_, MAIN_EVENT_SCHEDULE);
 }
 
+extern "C" esp_err_t audio_sys_get_real_time_stats(void);
+
 // The Main Event Loop controls the chat state and websocket connection
 // If other tasks need to access the websocket or chat state,
 // they should use Schedule to call this function
@@ -618,6 +620,7 @@ void Application::MainEventLoop() {
                 // SystemInfo::PrintTaskCpuUsage(pdMS_TO_TICKS(1000));
                 // SystemInfo::PrintTaskList();
                 SystemInfo::PrintHeapStats();
+                audio_sys_get_real_time_stats();
             }
         }
     }

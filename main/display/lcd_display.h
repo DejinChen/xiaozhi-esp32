@@ -50,6 +50,14 @@ public:
     virtual void SetEmotion(const char* emotion) override;
     virtual void SetChatMessage(const char* role, const char* content) override; 
     virtual void SetPreviewImage(std::unique_ptr<LvglImage> image) override;
+    void SetEmotionClickable(lv_event_cb_t cb) {
+        ESP_LOGI("TAG", "SetEmotionClickable");
+        if (status_bar_) {
+            ESP_LOGI("TAG", "emoji_label_");
+            lv_obj_add_flag(status_bar_, LV_OBJ_FLAG_CLICKABLE);
+            lv_obj_add_event_cb(status_bar_, cb, LV_EVENT_CLICKED, NULL);
+        }
+    }
 
     // Add theme switching function
     virtual void SetTheme(Theme* theme) override;

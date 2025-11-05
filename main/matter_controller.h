@@ -3,13 +3,14 @@
  */
 
 #include "lvgl.h"
+#include "lvgl_image.h"
 #include "mcp_server.h"
 #include <esp_err.h>
 
 class MatterController {
 public:
     esp_err_t Initialize();
-    lv_img_dsc_t *GetCommissioningQrcode();
+    std::unique_ptr<LvglImage> GetCommissioningQrcode();
 
     static MatterController *GetInstance()
     {

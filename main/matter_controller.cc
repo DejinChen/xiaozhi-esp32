@@ -10,6 +10,7 @@
 #include "esp_matter_controller_cluster_command.h"
 #include "esp_matter_endpoint.h"
 #include "esp_pthread.h"
+#include "lcd_display.h"
 #include "matter_controller_device_mgr.h"
 
 #if CONFIG_CUSTOM_COMMISSIONABLE_DATA_PROVIDER
@@ -23,7 +24,7 @@
 using namespace chip;
 using namespace chip::app::Clusters;
 
-lv_img_dsc_t *MatterController::GetCommissioningQrcode()
+std::unique_ptr<LvglImage> MatterController::GetCommissioningQrcode()
 {
     DisplayLockGuard lock(Board::GetInstance().GetDisplay());
     lv_obj_t *qrcode_obj = lv_qrcode_create(NULL);
@@ -36,7 +37,7 @@ lv_img_dsc_t *MatterController::GetCommissioningQrcode()
     lv_qrcode_update(qrcode_obj, qrcode_data, strlen(qrcode_data));
     ESP_LOGI(TAG, "QR Data: %s", qrcode_data);
 
-    return lv_canvas_get_image(qrcode_obj);
+    return std::make_unique<LvglSourceImage>(lv_canvas_get_image(qrcode_obj));
 }
 
 esp_err_t MatterController::Initialize()
@@ -65,7 +66,7 @@ esp_err_t MatterController::Initialize()
             if (!get_esp_matter_commissioning_state()) {
                 auto display = Board::GetInstance().GetDisplay();
                 if (display != nullptr) {
-                    display->SetPreviewImage(GetCommissioningQrcode());
+                    static_cast<LcdDisplay *>(display)->SetPreviewImage(GetCommissioningQrcode());
                 }
                 return ReturnValue(std::string("Scan the QRcode to commissioning device"));
             }

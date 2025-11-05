@@ -450,7 +450,7 @@ CHIP_ERROR send_light_hue_command(uint64_t node_id, uint8_t hue)
 
     return chip::DeviceLayer::SystemLayer().ScheduleLambda([node_id_upper, node_id_lower, hue]() {
         char command_arg[128];
-        snprintf(command_arg, sizeof(command_arg), "{\"0:U32\":%d,\"1:U32\":0,\"2:U32\":10,\"3:U32\":0,\"4:U32\":0}",
+        snprintf(command_arg, sizeof(command_arg), "{\"0:U8\":%d,\"1:U8\":0,\"2:U16\":0,\"3:U8\":0,\"4:U8\":0}",
                  hue);
         esp_matter::controller::send_invoke_cluster_command(uint64_t(node_id_upper) << 32 | node_id_lower, 1,
                                                             ColorControl::Id, ColorControl::Commands::MoveToHue::Id,
@@ -476,7 +476,7 @@ CHIP_ERROR send_light_saturation_command(uint64_t node_id, uint8_t saturation)
 
     return chip::DeviceLayer::SystemLayer().ScheduleLambda([node_id_upper, node_id_lower, saturation]() {
         char command_arg[128];
-        snprintf(command_arg, sizeof(command_arg), "{\"0:U32\":%d,\"1:U32\":0,\"2:U32\":0,\"3:U32\":0}", saturation);
+        snprintf(command_arg, sizeof(command_arg), "{\"0:U8\":%d,\"1:U16\":0,\"2:U8\":0,\"3:U8\":0}", saturation);
         esp_matter::controller::send_invoke_cluster_command(uint64_t(node_id_upper) << 32 | node_id_lower, 1,
                                                             ColorControl::Id,
                                                             ColorControl::Commands::MoveToSaturation::Id, command_arg);

@@ -255,6 +255,7 @@ private:
         };
         lvgl_port_add_touch(&touch_cfg);
         display_->SetEmotionClickable([](lv_event_t *e) -> void {
+            ESP_LOGI(TAG, "SetEmotionClickable");
             lv_event_code_t code = lv_event_get_code(e);
             if (code == LV_EVENT_CLICKED) {
                 auto& app = Application::GetInstance();
@@ -262,6 +263,23 @@ private:
             }
         });
         ESP_LOGI(TAG, "Touch panel initialized successfully");
+        // ESP_LOGI(TAG, "Init FT6336");
+        // ft6336_ = new Ft6336(i2c_bus_, 0x38);
+        
+        // // 创建定时器，20ms 间隔
+        // esp_timer_create_args_t timer_args = {
+        //     .callback = [](void* arg) {
+        //         M5StackCoreS3Board* board = (M5StackCoreS3Board*)arg;
+        //         board->PollTouchpad();
+        //     },
+        //     .arg = this,
+        //     .dispatch_method = ESP_TIMER_TASK,
+        //     .name = "touchpad_timer",
+        //     .skip_unhandled_events = true,
+        // };
+        
+        // ESP_ERROR_CHECK(esp_timer_create(&timer_args, &touchpad_timer_));
+        // ESP_ERROR_CHECK(esp_timer_start_periodic(touchpad_timer_, 20 * 1000));
     }
 
     void InitializeSpi() {
